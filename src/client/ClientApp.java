@@ -27,13 +27,14 @@ public class ClientApp {
             System.out.print("\nEnter message: ");
             String content = scanner.nextLine();
 
-            // Obtain the current timestamp from TimeManager
+            // Use the TimeManager to obtain a consistent system-wide timestamp
             long timestamp = TimeManager.getCurrentTime();
             
-            // Assemble message payload for sending to Distributed Messaging System
+            // Assemble the message object for transport across the distributed network.
+            // Timestamp ensures messages can be ordered consistently.
             Message message = new Message(sender, "All", content, timestamp);
 
-            // Send to the server for distribution
+            // Transmit the message for processing and distribution
             out.writeObject(message);
             out.flush();
 

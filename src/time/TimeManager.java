@@ -24,10 +24,20 @@ public class TimeManager {
     
     /**
      * Provides a comparator to order messages based on their timestamps.
-     * This establishes a total order based on the time the message was created.
+     * This establishes a total order based on the chronological creation of messages.
+     * Smaller timestamps represent messages created earlier in time.
      */
     public static Comparator<Message> getTimestampComparator() {
-        return (m1, m2) -> Long.compare(m1.getTimestamp(), m2.getTimestamp());
+        return (m1, m2) -> compareTimestamps(m1.getTimestamp(), m2.getTimestamp());
+    }
+
+    /**
+     * Helper method to compare two timestamps.
+     * Returns a negative integer, zero, or a positive integer as the first
+     * timestamp is less than, equal to, or greater than the second.
+     */
+    private static int compareTimestamps(long t1, long t2) {
+        return Long.compare(t1, t2);
     }
 }
 
