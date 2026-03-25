@@ -27,11 +27,13 @@ public class ClientApp {
             System.out.print("\nEnter message: ");
             String content = scanner.nextLine();
 
-            // Assemble payload
+            // Obtain the current timestamp from TimeManager
             long timestamp = TimeManager.getCurrentTime();
+            
+            // Assemble message payload for sending to Distributed Messaging System
             Message message = new Message(sender, "All", content, timestamp);
 
-            // Send
+            // Send to the server for distribution
             out.writeObject(message);
             out.flush();
 
