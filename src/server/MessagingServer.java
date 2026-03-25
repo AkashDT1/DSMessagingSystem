@@ -49,11 +49,12 @@ public class MessagingServer {
             }
         }).start();
 
-        // Background fault-tolerance thread to perform heartbeat / leader election
+        // Background fault-tolerance thread to perform heartbeat / leader election every 5 seconds
         new Thread(() -> {
             while (true) {
                 try {
                     Thread.sleep(5000);
+                    // System.out.println("[MONITOR] Initiating leader check...");
                     leaderElection.electLeader();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
