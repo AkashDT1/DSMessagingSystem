@@ -6,6 +6,8 @@ import time.TimeManager;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Handles persistent storage of messaging data.
@@ -13,6 +15,7 @@ import java.util.List;
  */
 public class MessageStore {
     private List<Message> messages;
+    private Set<String> seenMessageIds;
     private int port;
     
     private static final String STORAGE_FILE_PREFIX = "server_storage_";
@@ -20,6 +23,12 @@ public class MessageStore {
     public MessageStore(int port) {
         this.port = port;
         this.messages = loadMessagesFromFile();
+        
+        // Populate the lookup set for O(1) deduplication
+        this.seenMessageIds = new HashSet<>();
+        for (Message m : this.messages) {
+            this.seenMessageIds.add(m.getMessageId());
+        }
     }
 
     private String getFileName() {
@@ -35,12 +44,11 @@ public class MessageStore {
      * @return true if stored successfully, false if the message already exists.
      */
     public synchronized boolean storeMessage(Message message) {
-        // Linear scan to prevent duplicate entries based on Message ID
-        for (Message m : messages) {
-            if (m.getMessageId().equals(message.getMessageId())) {
-                return false;
-            }
+        // O(1) deduplication check using HashSet. If add() returns false, it was already present.
+        if (!seenMessageIds.add(message.getMessageId())) {
+            return false;
         }
+        
         messages.add(message);
         saveMessagesToFile();
         return true;

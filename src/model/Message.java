@@ -1,6 +1,7 @@
 package model;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -35,4 +36,17 @@ public class Message implements Serializable {
     public long getTimestamp() { return timestamp; }
     public boolean isReplication() { return isReplication; }
     public void setReplication(boolean replication) { isReplication = replication; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Message message = (Message) o;
+        return Objects.equals(messageId, message.messageId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(messageId);
+    }
 }

@@ -26,10 +26,11 @@ public class ReplicationManager {
      * @param message The message to replicate.
      */
     public void replicateMessage(Message message) {
-        System.out.println("Replicating message to other peers...");
+        System.out.println("Initiating replication for message ID: " + message.getMessageId() + "...");
         message.setReplication(true); // Flag to stop circular replication
 
         for (int targetPort : otherServerPorts) {
+            System.out.println(" -> Replicating to peer at port " + targetPort);
             sendMessageToPort(message, targetPort);
         }
     }
@@ -41,6 +42,7 @@ public class ReplicationManager {
      * @param leaderPort The port of the designated cluster leader.
      */
     public void forwardToLeader(Message message, int leaderPort) {
+        System.out.println("Forwarding client request to leader at port " + leaderPort + "...");
         sendMessageToPort(message, leaderPort);
     }
 
@@ -68,6 +70,7 @@ public class ReplicationManager {
                 @SuppressWarnings("unchecked")
                 List<Message> allMessages = (List<Message>) received;
                 for (Message m : allMessages) {
+                    m.setReplication(true); // Prevent re-replication of synced messages locally
                     messagingServer.processMessage(m);
                 }
                 System.out.println("Synchronization complete: " + allMessages.size() + " messages synchronized.");
