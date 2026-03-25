@@ -1,0 +1,48 @@
+package client;
+
+import model.Message;
+import time.TimeManager;
+
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
+import java.util.Scanner;
+
+public class ClientApp {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.print("Enter server port to connect to (e.g., 5001): ");
+        int port = Integer.parseInt(scanner.nextLine());
+
+        try (Socket socket = new Socket("localhost", port);
+                ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+                ObjectInputStream in = new ObjectInputStream(socket.getInputStream())) {
+
+            System.out.println("Connected to server at port " + port);
+
+            System.out.print("\nEnter your name: ");
+            String sender = scanner.nextLine();
+
+            System.out.print("\nEnter message: ");
+            String content = scanner.nextLine();
+
+            // Assemble payload
+            long timestamp = TimeManager.getCurrentTime();
+            Message message = new Message(sender, "All", content, timestamp);
+
+            // Send
+            out.writeObject(message);
+            out.flush();
+
+            // Receive ack
+            String confirmation = (String) in.readObject();
+            System.out.println("\n" + confirmation);
+
+        } catch (Exception e) {
+            System.out.println("Error connecting to server. Is it running on this port?");
+        } finally {
+            scanner.close();
+        }
+    }
+}
