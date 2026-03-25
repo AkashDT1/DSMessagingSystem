@@ -35,11 +35,10 @@ public class FailureDetector {
             // A timeout is essential to prevent the thread from blocking indefinitely 
             // if the network is sluggish or the remote host is down.
             socket.connect(new InetSocketAddress(host, port), CONNECTION_TIMEOUT_MS);
-            
             return true;
         } catch (IOException e) {
-            // If an IOException occurs (e.g., connection refused, timeout, unknown host),
-            // we assume the remote server is currently unavailable.
+            // If we catch an exception, the node is considered unreachable or faulty.
+            System.err.println("[FAULT] Connection attempt failed: " + host + ":" + port + ". Node may be offline or network congested.");
             return false;
         }
     }

@@ -31,19 +31,21 @@ public class ServerConnectionManager extends Thread {
     @Override
     public void run() {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
-            System.out.println(">>> Messaging Server node successfully started on port " + port);
+            System.out.println("[SYSTEM] Messaging Node initialized. Listening for connections on port " + port + ".");
 
-            // Continuously listen for incoming connections unless the thread is closed
+            // The main server loop: waits for and accepts incoming client/node connections.
             while (!Thread.currentThread().isInterrupted()) {
                 Socket clientSocket = serverSocket.accept();
+                
+                // Log connection details to assist in monitoring cluster health and synchronization.
+                System.out.println("[RECOV] Connection established with remote peer at " + clientSocket.getRemoteSocketAddress());
                 
                 // Offload communication logic to a ClientHandler thread
                 new ClientHandler(clientSocket, messagingServer).start();
             }
         } catch (IOException e) {
-            System.err.println("\n[ERROR] Server socket failure or port " + port + " is busy.");
-            System.err.println("Note: Check for existing processes or verify network permissions.");
-            System.err.println("Detailed reason: " + e.getMessage() + "\n");
+            System.err.println("\n[CRITICAL] Server socket failure on port " + port + ". The port might be busy or restricted.");
+            System.err.println("Details: " + e.getMessage() + "\n");
         }
     }
 }
