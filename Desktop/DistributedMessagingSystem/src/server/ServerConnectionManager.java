@@ -31,23 +31,24 @@ public class ServerConnectionManager extends Thread {
     @Override
     public void run() {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
-            System.out.println("[SYSTEM] Messaging Node initialized. Listening for connections on port " + port + ".");
+            System.out.println("[SYSTEM] Server initialized on Port " + port + ". Ready for cluster traffic...");
 
-            // The main server loop: waits for and accepts incoming client/node connections.
+            // Listening loop: accepts incoming requests until the node shuts down
             while (!Thread.currentThread().isInterrupted()) {
                 Socket clientSocket = serverSocket.accept();
                 
-                // Log connection details to assist in monitoring cluster health and synchronization.
-                System.out.println("[RECOV] Connection established with remote peer at " + clientSocket.getRemoteSocketAddress());
+                // Log incoming network activity for monitoring distributed state
+                System.out.println("[INBOUND] Established connection with peer at " + clientSocket.getRemoteSocketAddress());
                 
-                // Offload communication logic to a ClientHandler thread
+                // Hand off the interaction to a worker thread for concurrent processing
                 new ClientHandler(clientSocket, messagingServer).start();
             }
         } catch (IOException e) {
-            System.err.println("\n[CRITICAL] Server socket failure on port " + port + ". The port might be busy or restricted.");
+            System.err.println("\n[FATAL] Server Socket failure on port " + port);
             System.err.println("Details: " + e.getMessage() + "\n");
         }
     }
+
 }
 
 
