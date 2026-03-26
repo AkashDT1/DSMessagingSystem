@@ -1,29 +1,23 @@
 # Distributed Messaging System
 
 ## Overview
-This is a robust, distributed messaging system built in Java. It enables seamless communication between multiple server nodes and clients while ensuring high availability and data integrity across a cluster. The system is designed to handle network partitions and node failures through integrated fault tolerance and replication mechanisms.
+This is a simple distributed messaging system written in Java. It allows multiple servers and clients to talk to each other while keeping everything in sync. We built this to learn how distributed systems handle things like node failures and data replication across a cluster.
 
-## Main Modules
-- **`client`**: User interface and client-side communication logic.
-- **`consensus`**: Implements leader election and cluster consensus algorithms.
-- **`fault`**: Contains failure detection and heartbeat monitoring logic.
-- **`model`**: Core data structures and message definitions.
-- **`replication`**: Manages data consistency and log replication across nodes.
-*   **`server`**: The central messaging service engine and connection manager.
-- **`storage`**: Handles local message persistence and retrieval.
-- **`time`**: Implements time synchronization and clock management (e.g., Lamport clocks).
+## Module Responsibilities
+Our project is divided into several parts, each handling a specific job:
+- **`server`**: The main brain of the system. It manages incoming client connections and coordinates with other servers.
+- **`client`**: Provides the interface for users to send and receive messages from the server cluster.
+- **`fault`**: Keeps an eye on other nodes. If a server goes down, this module detects it using heartbeats so we can recover quickly.
+- **`replication`**: Makes sure every node has a copy of the messages. It manages consistency so no data is lost if one node fails.
+- **`consensus`**: Helps the servers agree on who the leader is and handle cluster-wide decisions.
+- **`storage`**: Deals with saving messages locally on the disk so they are still there after a restart.
+- **`time`**: Keeps track of when things happened using logical clocks to avoid confusion between nodes.
+- **`model`**: Contains the basic building blocks like message types and data structures used throughout the system.
 
 ## Key Features
-- **Fault Tolerance**: Automatic detection of failed nodes and graceful recovery.
-- **Replication & Consistency**: Multi-node data replication ensuring no single point of failure.
-- **Consensus**: Leader-based architecture for coordinated state updates.
-- **Time Synchronization**: Consistent ordering of events across the distributed cluster.
-
-## Team & Responsibilities
-- **Akash**: Lead Developer - Fault Tolerance, Consensus Logic, and Cluster Management.
-- **Team Member 2**: Replication Strategy and Data Consistency.
-- **Team Member 3**: Time Synchronization and Storage Layer.
-- **Team Member 4**: Client Interface and Server Networking.
+- **Reliable Messaging**: Even if one server stops working, the others keep going.
+- **Automatic Recovery**: The system automatically detects when a crashed node comes back and updates it.
+- **Data Sync**: Messages are copied to multiple servers so the data is always safe.
 
 ---
-*Developed as part of the Distributed Systems coursework.*
+*Developed as part of our Distributed Systems coursework.*
