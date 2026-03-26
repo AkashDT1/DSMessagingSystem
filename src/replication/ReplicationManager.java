@@ -21,10 +21,11 @@ public class ReplicationManager {
 
     /**
      * Broadcasts a new message to all other known servers in the cluster.
-     * This ensures high availability and consistency across the system.
-     * Crucially, we mark the message as a 'replica' before sending it out.
-     * This stops the receiving server from broadcasting it again, 
-     * which would otherwise cause an infinite network loop.
+     * This provides data redundancy and eventual consistency across nodes.
+     * 
+     * To prevent an infinite replication broadcast loop (e.g., A -> B -> A), 
+     * we flag the message as 'isReplication = true'. The receiving node will store it 
+     * but won't broadcast it further.
      * 
      * @param message The original message received from a client.
      */

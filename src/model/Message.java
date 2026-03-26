@@ -17,10 +17,12 @@ public class Message implements Serializable {
     private String content;
     private long timestamp;
     
-    // Indicates if the message originated from a cross-server replication sync
+    // Indicates if the message originated from a cross-server replication sync.
+    // This flag is critical for preventing infinite network loops during broadcasting.
     private boolean isReplication; 
 
     public Message(String sender, String receiver, String content, long timestamp) {
+        // Unique ID ensures we can track duplicates across the distributed system
         this.messageId = UUID.randomUUID().toString();
         this.sender = sender;
         this.receiver = receiver;

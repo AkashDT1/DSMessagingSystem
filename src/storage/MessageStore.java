@@ -40,9 +40,9 @@ public class MessageStore {
 
     /**
      * Stores a new message locally and saves the updated state to disk.
-     * This method handles duplicate message detection: because node replication
-     * can cause the same message to arrive multiple times, we use a HashSet
-     * to track known Message IDs and safely ignore any duplicates.
+     * This method is the core of our local consistency guarantee.
+     * Because node replication can cause the same message to arrive multiple times,
+     * we use a HashSet to track known Message IDs and safely ignore any duplicates.
      *
      * @param message The message object to be stored.
      * @return true if it is a new message and was stored successfully; 
