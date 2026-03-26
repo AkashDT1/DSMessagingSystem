@@ -39,12 +39,19 @@ public class MessagingServer {
             try {
                 Thread.sleep(2000); 
                 System.out.println("[RECOV] Initiating state synchronization with active neighbors...");
+                boolean synced = false;
                 for (int otherPort : allServerPorts) {
                     if (otherPort != myPort && leaderElection.isServerAlive(otherPort)) {
-                        System.out.println("[RECOV] Pulling logs from remote node at port " + otherPort);
+                        System.out.println("[RECOV] Peer found at port " + otherPort + ". Requesting state sync...");
                         replicationManager.requestSyncFrom(otherPort);
+                        synced = true;
                         break; 
                     }
+                }
+                if (!synced) {
+                    System.out.println("[RECOV] Warning: No active neighbors found for sync. Starting with local store only.");
+                } else {
+                    System.out.println("[RECOV] Recovery sync complete. Cluster state should be up-to-date.");
                 }
             } catch (InterruptedException e) {
             }

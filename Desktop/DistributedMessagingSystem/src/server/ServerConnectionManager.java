@@ -37,8 +37,8 @@ public class ServerConnectionManager extends Thread {
             while (!Thread.currentThread().isInterrupted()) {
                 Socket clientSocket = serverSocket.accept();
                 
-                // Log incoming network activity for monitoring distributed state
-                System.out.println("[INBOUND] Established connection with peer at " + clientSocket.getRemoteSocketAddress());
+                // Log incoming network activity: important for tracking cluster state changes and node reconnects
+                System.out.println("[CLUSTER] Node at " + clientSocket.getRemoteSocketAddress() + " established a connection for message sync/replication.");
                 
                 // Hand off the interaction to a worker thread for concurrent processing
                 new ClientHandler(clientSocket, messagingServer).start();
