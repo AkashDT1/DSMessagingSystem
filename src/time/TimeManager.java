@@ -12,11 +12,10 @@ import java.util.Comparator;
 public class TimeManager {
     
     /**
-     * Gets the current system time in milliseconds.
+     * Obtains the current system time in milliseconds for message timestamping.
      * 
-     * NOTE: This relies on the local system's physical clock. In a production 
-     * distributed environment, this should ideally be combined with logical 
-     * clocks (Lamport or Vector) to ensure causal ordering.
+     * NOTE: In our distributed system, this provides the "physical" timestamp.
+     * While simple, it relies on system clock accuracy for global ordering.
      */
     public static long getCurrentTime() {
         return System.currentTimeMillis();
@@ -24,20 +23,15 @@ public class TimeManager {
     
     /**
      * Provides a comparator to order messages based on their timestamps.
-     * This establishes a total order based on the chronological creation of messages.
-     * Smaller timestamps represent messages created earlier in time.
+     * This establishes a "Total Ordering" of messages across the distributed network.
+     * 
+     * Such ordering ensures that all recipients see messages in a consistent sequence,
+     * which is critical for maintaining a coherent state in the messaging system.
+     * 
+     * @return A comparator where smaller timestamps (older messages) come first.
      */
     public static Comparator<Message> getTimestampComparator() {
-        return (m1, m2) -> compareTimestamps(m1.getTimestamp(), m2.getTimestamp());
-    }
-
-    /**
-     * Helper method to compare two timestamps.
-     * Returns a negative integer, zero, or a positive integer as the first
-     * timestamp is less than, equal to, or greater than the second.
-     */
-    private static int compareTimestamps(long t1, long t2) {
-        return Long.compare(t1, t2);
+        return (m1, m2) -> Long.compare(m1.getTimestamp(), m2.getTimestamp());
     }
 }
 

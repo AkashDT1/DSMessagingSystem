@@ -27,12 +27,13 @@ public class ClientApp {
             System.out.print("\nEnter message: ");
             String content = scanner.nextLine();
 
-            // Use the TimeManager to obtain a consistent system-wide timestamp
-            long timestamp = TimeManager.getCurrentTime();
+            // 1. Generate a timestamp to establish message ordering
+            // This allows the system to sort messages globally across all users.
+            long messageTimestamp = TimeManager.getCurrentTime();
             
-            // Assemble the message object for transport across the distributed network.
-            // Timestamp ensures messages can be ordered consistently.
-            Message message = new Message(sender, "All", content, timestamp);
+            // 2. Wrap the sender details and content into a structured message object. 
+            // The timestamp is key for ensuring total message order in the system.
+            Message message = new Message(sender, "All", content, messageTimestamp);
 
             // Transmit the message for processing and distribution
             out.writeObject(message);
