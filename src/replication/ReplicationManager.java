@@ -21,10 +21,12 @@ public class ReplicationManager {
 
     /**
      * Broadcasts a new message to all peer servers in the cluster.
-     * This ensures data redundancy and consistency across the distributed system.
+     * This guarantees data redundancy and state consistency across the distributed system.
      * 
-     * The replication flag is set to true before broadcasting.
-     * This prevents infinite replication loops, as receiving nodes will not re-broadcast it.
+     * **Replication Flow & Loop Prevention:**
+     * Before sending to followers, the replication flag is explicitly set to true.
+     * Followers receiving a replicated message will store it but will NOT re-broadcast it.
+     * This prevents infinite replication loops and network flooding.
      * 
      * @param message The original message to replicate.
      */
@@ -53,7 +55,8 @@ public class ReplicationManager {
 
     /**
      * Synchronizes missing messages from the current leader during startup.
-     * Brings this node up to speed if it joins late or recovers from a crash.
+     * This state transfer is crucial for node recovery or joining a running cluster,
+     * ensuring the requesting node achieves eventual consistency with the leader.
      * 
      * @param leaderPort Port of the current elected leader.
      */

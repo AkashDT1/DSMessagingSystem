@@ -26,8 +26,9 @@ public class MessageStore {
         // 1. Recover previously saved messages from disk
         this.messages = loadMessagesFromFile();
         
-        // 2. Initialize our deduplication set with loaded message IDs
-        // This prevents re-adding duplicates during future replication
+        // 2. Initialize our deduplication set with loaded message IDs (in-memory optimized lookup)
+        // This ensures identical messages arriving from network replication or leader synchronization
+        // are identified and discarded, enforcing exactly-once local storage consistency.
         this.seenMessageIds = new HashSet<>();
         for (Message m : this.messages) {
             this.seenMessageIds.add(m.getMessageId());
@@ -41,10 +42,12 @@ public class MessageStore {
     /**
      * Stores a message locally and persists the updated state to disk.
      * 
-     * Duplicate Handling Strategy:
-     * In a distributed system, a single message may be received multiple times 
-     * due to network replication. We use a HashSet of known message IDs 
-     * (seenMessageIds) to detect and ignore duplicates in O(1) time.
+     * **Consistency & Duplicate Handling Strategy:**
+     * In a distributed system, a single message may arrive multiple times 
+     * (e.g., from client retries, network replication, or node synchronization). 
+     * We use a HashSet of known message IDs (seenMessageIds) to detect and ignore 
+     * duplicates in O(1) time. This guarantees that every node maintains a clean, 
+     * consistent state without redundant records.
      *
      * @param message The given message object to store.
      * @return true if successfully stored; false if discarded as duplicate.
