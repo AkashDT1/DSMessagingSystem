@@ -34,27 +34,27 @@ public class MessagingServer {
     public void startServer() {
         connectionManager.start();
 
-        // Recovery Logic: Always try to sync from any available server on startup
+        // Data Management/Recovery: Always sync from available neighbors on startup to ensure consistency
         new Thread(() -> {
             try {
-                Thread.sleep(2000); // Wait for connection manager to start
-                System.out.println("Checking with neighbors to catch up on missed messages...");
+                Thread.sleep(2000); // Warm-up period for connection manager
+                System.out.println("[RECOVERY] Checking with cluster neighbors to catch up on missed messages...");
                 for (int otherPort : allServerPorts) {
                     if (otherPort != myPort && leaderElection.isServerAlive(otherPort)) {
+                        System.out.println("[RECOVERY] Synchronizing state with peer at port: " + otherPort);
                         replicationManager.requestSyncFrom(otherPort);
-                        break; // Stop after first successful sync attempt
+                        break; // Consistent state achieved after first successful sync
                     }
                 }
             } catch (InterruptedException e) {
             }
         }).start();
 
-        // Background fault-tolerance thread to perform heartbeat / leader election every 5 seconds
+        // Background consensus/monitoring thread to handle dynamic leader adjustments
         new Thread(() -> {
             while (true) {
                 try {
-                    Thread.sleep(5000);
-                    // System.out.println("[MONITOR] Initiating leader check...");
+                    Thread.sleep(5000); // Periodic heartbeat check
                     leaderElection.electLeader();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -64,22 +64,23 @@ public class MessagingServer {
     }
 
     public void processMessage(Message message) {
-        // 1. Store locally if it's new
+        // 1. Persist the message locally if it is not already stored
         boolean isNewMessage = messageStore.storeMessage(message);
 
         if (isNewMessage) {
             String type = message.isReplication() ? "REPLICATION" : "NEW";
-            System.out
-                    .println("[" + type + "] Stored message from " + message.getSender() + ": " + message.getContent());
+            System.out.println("[" + type + "] Committed message from " + message.getSender() + ": " + message.getContent());
         }
 
-        // 2. Replication Logic Coordinated By Leader
+        // 2. Replication Logic Coordinated By Current Leader
+        // Only the leader server handles the cluster-wide distribution of messages
         if (isNewMessage && !message.isReplication()) {
             if (leaderElection.amILeader()) {
+                System.out.println("[COORDINATION] I am the LEADER! Managing cluster-wide consistency by replicating message.");
                 replicationManager.replicateMessage(message);
             } else {
-                // Not the leader, forward up to the leader so it manages the system replication
-                System.out.println("Forwarding message to leader to handle replication.");
+                // Not the leader, forward to the active leader to manage system-wide replication
+                System.out.println("[COORDINATION] I am not the leader. Forwarding message to LEADER (Port: " + leaderElection.getCurrentLeaderPort() + ") for replication management.");
                 replicationManager.forwardToLeader(message, leaderElection.getCurrentLeaderPort());
             }
         }

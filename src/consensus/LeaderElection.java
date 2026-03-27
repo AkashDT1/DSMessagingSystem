@@ -29,8 +29,12 @@ public class LeaderElection {
     /**
      * Executes the election logic using a priority-based approach.
      * The first reachable server in the prioritized list (serverPriorityList) is elected as leader.
+     * This follows the 'Bully' style priority where the lowest port (highest priority) 
+     * takes responsibility for coordination if it is online.
      */
     public synchronized void electLeader() {
+        // System.out.println("[CONSENSUS] Starting election cycle to determine system coordinator...");
+        
         // Iterate through all nodes starting from the highest priority (lowest port)
         for (int potentialLeaderPort : serverPriorityList) {
             
@@ -38,7 +42,8 @@ public class LeaderElection {
             if (potentialLeaderPort == myPort) {
                 if (currentLeaderPort != myPort) {
                     currentLeaderPort = myPort;
-                    System.out.println("\n[CONSENSUS] No higher priority nodes detected. I am now the Leader! (Port: " + myPort + ")");
+                    System.out.println("\n[CONSENSUS] COORDINATION UPDATE: No higher priority nodes detected. I am now the Leader/Coordinator!");
+                    System.out.println("[CONSENSUS] My role is now to manage cluster-wide message replication.");
                 }
                 return;
             } 
@@ -47,7 +52,8 @@ public class LeaderElection {
             if (isServerAlive(potentialLeaderPort)) {
                 if (currentLeaderPort != potentialLeaderPort) {
                     currentLeaderPort = potentialLeaderPort;
-                    System.out.println("\n[CONSENSUS] Detected a higher priority Leader at port: " + potentialLeaderPort);
+                    System.out.println("\n[CONSENSUS] COORDINATION UPDATE: Higher priority node found at port " + potentialLeaderPort);
+                    System.out.println("[CONSENSUS] Following " + potentialLeaderPort + " as the cluster leader for consistency.");
                 }
                 return;
             }
