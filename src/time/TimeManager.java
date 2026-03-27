@@ -8,9 +8,9 @@ import java.util.Date;
 /**
  * TimeManager handles system-wide timestamping and synchronization logic.
  * 
- * In distributed systems, clock synchronization is a critical challenge as 
- * physical clocks on different nodes can drift over time. This class provides
- * the foundation for message ordering based on coordinated timestamps.
+ * In distributed systems, clock synchronization is a critical challenge. 
+ * This class provides mechanisms for temporal ordering of events (messages)
+ * across multiple independent nodes.
  */
 public class TimeManager {
     
@@ -19,10 +19,10 @@ public class TimeManager {
     /**
      * Obtains the current system time in milliseconds for message timestamping.
      * 
-     * NOTE: In our distributed system, this provides the "physical" timestamp.
-     * While simple, it relies on system clock accuracy for global ordering.
-     * In a production environment, this would be supplemented by NTP or 
-     * logical clocks like Lamport timestamps.
+     * RATIONALE: We use the system's "physical clock" for global timestamping.
+     * While simple, this approach provides a "best-effort" ordering. In a 
+     * comprehensive production environment, this would be supplemented by 
+     * hybrid logical clocks or NTP-synchronized time for greater precision.
      * 
      * @return The current system time in milliseconds since epoch.
      */
@@ -32,10 +32,9 @@ public class TimeManager {
     
     /**
      * Formats a long timestamp into a human-readable string.
-     * Useful for debugging and presenting message flows in the UI/Logs.
      * 
      * @param timestamp The timestamp in milliseconds.
-     * @return A formatted string (HH:mm:ss.SSS).
+     * @return A formatted string (HH:mm:ss.SSS) for UI and log visibility.
      */
     public static String getFormattedTimestamp(long timestamp) {
         return DATE_FORMAT.format(new Date(timestamp));
@@ -43,16 +42,27 @@ public class TimeManager {
     
     /**
      * Provides a comparator to order messages based on their timestamps.
-     * This establishes a "Total Ordering" of messages across the distributed network.
      * 
-     * Such ordering ensures that all recipients see messages in a consistent sequence,
-     * which is critical for maintaining a coherent state in the messaging system.
+     * IMPLEMENTATION DETAIL: To ensure a "Total Ordering", we use the timestamp as 
+     * the primary key. If two messages have identical timestamps (due to clock 
+     * resolution or simultaneous events), we use the messageId as a secondary 
+     * tie-breaker. This ensures that every pair of messages has a deterministic order.
      * 
-     * @return A comparator where smaller timestamps (older messages) come first.
+     * @return A comparator where older messages (smaller timestamps) appear first.
      */
     public static Comparator<Message> getTimestampComparator() {
-        return Comparator.comparingLong(Message::getTimestamp);
+        return Comparator
+                .comparingLong(Message::getTimestamp)
+                .thenComparing(Message::getMessageId);
+    }
+
+    /**
+     * Direct comparison of two messages to determine their relative order.
+     * Useful for checking if message A should precede message B.
+     * 
+     * @return result < 0 if m1 is older, > 0 if m2 is older, 0 if identical.
+     */
+    public static int compare(Message m1, Message m2) {
+        return getTimestampComparator().compare(m1, m2);
     }
 }
-
-
