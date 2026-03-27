@@ -8,9 +8,9 @@ import java.util.Date;
 /**
  * TimeManager handles system-wide timestamping and synchronization logic.
  * 
- * In distributed systems, clock synchronization is a critical challenge. 
- * This class provides mechanisms for temporal ordering of events (messages)
- * across multiple independent nodes.
+ * In distributed systems, establishing a consistent timeline is a critical challenge. 
+ * This class provides a centralized mechanism for temporal ordering of events 
+ * (messages) across multiple independent nodes, using physical clock synchronization.
  */
 public class TimeManager {
     
@@ -21,8 +21,8 @@ public class TimeManager {
      * 
      * RATIONALE: We use the system's "physical clock" for global timestamping.
      * While simple, this approach provides a "best-effort" ordering. In a 
-     * comprehensive production environment, this would be supplemented by 
-     * hybrid logical clocks or NTP-synchronized time for greater precision.
+     * robust production environment, this would be supplemented by techniques 
+     * like hybrid logical clocks (HLC) or NTP synchronization for higher precision.
      * 
      * @return The current system time in milliseconds since epoch.
      */
@@ -43,12 +43,13 @@ public class TimeManager {
     /**
      * Provides a comparator to order messages based on their timestamps.
      * 
-     * IMPLEMENTATION DETAIL: To ensure a "Total Ordering", we use the timestamp as 
-     * the primary key. If two messages have identical timestamps (due to clock 
-     * resolution or simultaneous events), we use the messageId as a secondary 
-     * tie-breaker. This ensures that every pair of messages has a deterministic order.
+     * IMPLEMENTATION DETAIL: To achieve "Total Ordering" in a distributed environment, 
+     * we use the timestamp as the primary key. If two messages have identical 
+     * timestamps (due to clock resolution limits), the messageId serves as a 
+     * secondary tie-breaker. Assuming unique IDs, this guarantees a deterministic, 
+     * consistent order across all nodes in the system.
      * 
-     * @return A comparator where older messages (smaller timestamps) appear first.
+     * @return A comparator where older messages (smaller timestamps) precede newer ones.
      */
     public static Comparator<Message> getTimestampComparator() {
         return Comparator
