@@ -23,11 +23,11 @@ public class MessageStore {
     public MessageStore(int port) {
         this.port = port;
         
-        // 1. Load any saved messages from the disk so we don't lose data on restart
+        // 1. Recover previously saved messages from disk
         this.messages = loadMessagesFromFile();
         
-        // 2. Populate the fast-lookup Set with the IDs of all loaded messages.
-        // This ensures that when new messages arrive, we don't duplicate existing ones.
+        // 2. Initialize our deduplication set with loaded message IDs
+        // This prevents re-adding duplicates during future replication
         this.seenMessageIds = new HashSet<>();
         for (Message m : this.messages) {
             this.seenMessageIds.add(m.getMessageId());
@@ -39,28 +39,28 @@ public class MessageStore {
     }
 
     /**
-     * Stores a new message locally and saves the updated state to disk.
-     * This method is the core of our local consistency guarantee.
-     * Because node replication can cause the same message to arrive multiple times,
-     * we use a HashSet to track known Message IDs and safely ignore any duplicates.
+     * Stores a message locally and persists the updated state to disk.
+     * 
+     * Duplicate Handling Strategy:
+     * In a distributed system, a single message may be received multiple times 
+     * due to network replication. We use a HashSet of known message IDs 
+     * (seenMessageIds) to detect and ignore duplicates in O(1) time.
      *
-     * @param message The message object to be stored.
-     * @return true if it is a new message and was stored successfully; 
-     *         false if the message is a duplicate and was ignored.
+     * @param message The given message object to store.
+     * @return true if successfully stored; false if discarded as duplicate.
      */
     public synchronized boolean storeMessage(Message message) {
         String msgId = message.getMessageId();
         
-        // The HashSet.add() method returns false if the item was already in the set.
-        // This gives us a quick O(1) check to drop duplicate messages.
-        boolean isBrandNewMessage = seenMessageIds.add(msgId);
+        // Attempt to add the ID to our set. Returns false if already present.
+        boolean isNewMessage = seenMessageIds.add(msgId);
         
-        if (!isBrandNewMessage) {
+        if (!isNewMessage) {
             System.out.println("[Store] Duplicate message detected (ID: " + msgId + "). Ignoring.");
             return false;
         }
         
-        // It's a new message, so add it to our local list and persist the new state
+        // Message is new: append to the internal list and persist to disk
         messages.add(message);
         saveMessagesToFile();
         

@@ -20,19 +20,18 @@ public class ReplicationManager {
     }
 
     /**
-     * Broadcasts a new message to all other known servers in the cluster.
-     * This provides data redundancy and eventual consistency across nodes.
+     * Broadcasts a new message to all peer servers in the cluster.
+     * This ensures data redundancy and consistency across the distributed system.
      * 
-     * To prevent an infinite replication broadcast loop (e.g., A -> B -> A), 
-     * we flag the message as 'isReplication = true'. The receiving node will store it 
-     * but won't broadcast it further.
+     * The replication flag is set to true before broadcasting.
+     * This prevents infinite replication loops, as receiving nodes will not re-broadcast it.
      * 
-     * @param message The original message received from a client.
+     * @param message The original message to replicate.
      */
     public void replicateMessage(Message message) {
         System.out.println("[Replication] Initiating replication for message ID: " + message.getMessageId() + "...");
         
-        // Flag to prevent continuous circular replication across the network
+        // Mark message as a replica to prevent infinite circular replication
         message.setReplication(true); 
 
         for (int targetPort : otherServerPorts) {
@@ -87,28 +86,27 @@ public class ReplicationManager {
     }
 
     /**
-     * Helper method to send a serializable object to a specific server over a TCP socket.
-     * It waits to receive a confirmation (ACK) from the target server to ensure
-     * that the message was successfully delivered and processed.
+     * Sends a serializable object to a target server over a TCP socket.
+     * Blocks until an acknowledgment (ACK) is received from the target,
+     * ensuring successful delivery.
      *
-     * @param obj  The data object (like a Message or Sync Request) to send.
-     * @param port The port number of the target server.
+     * @param obj  The object (Message or Sync Request) to send.
+     * @param port The target server port.
      */
     private void sendMessageToPort(Object obj, int port) {
         try (Socket socket = new Socket("localhost", port);
              ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
              ObjectInputStream in = new ObjectInputStream(socket.getInputStream())) {
 
-            // Send the serialized object over the network
+            // Transmit the serialized object
             out.writeObject(obj);
             out.flush();
             
-            // Block and wait for a confirmation ACK from the peer before closing
+            // Wait for ACK confirmation from the target node
             in.readObject(); 
 
         } catch (Exception e) {
-            // It is normal for peers to occasionally be offline or unavailable. 
-            // We just log it and continue so the current server stays active.
+            // Log connection failures without crashing, allowing the system to remain available
             System.err.println("[Replication] Peer server at port " + port + " is currently unreachable. Skipping transmission.");
         }
     }
