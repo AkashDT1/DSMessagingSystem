@@ -72,16 +72,16 @@ public class MessagingServer {
             System.out.println("[" + type + "] Committed message from " + message.getSender() + ": " + message.getContent());
         }
 
-        // 2. Replication Logic Coordinated By Current Leader
-        // Only the leader server handles the cluster-wide distribution of messages
+        // 2. Replication Logic Coordinated By Current Leader (Consensus Integration)
         if (isNewMessage && !message.isReplication()) {
             if (leaderElection.amILeader()) {
-                System.out.println("[COORDINATION] I am the LEADER! Managing cluster-wide consistency by replicating message.");
+                System.out.println("[CONSENSUS_COORDINATION] Active Leader Role: Managing cluster-wide message distribution.");
                 replicationManager.replicateMessage(message);
             } else {
-                // Not the leader, forward to the active leader to manage system-wide replication
-                System.out.println("[COORDINATION] I am not the leader. Forwarding message to LEADER (Port: " + leaderElection.getCurrentLeaderPort() + ") for replication management.");
-                replicationManager.forwardToLeader(message, leaderElection.getCurrentLeaderPort());
+                // Determine current coordinator for forwarding
+                int leader = leaderElection.getCurrentLeaderPort();
+                System.out.println("[CONSENSUS_COORDINATION] Role: Follower. Forwarding to active leader at port " + leader);
+                replicationManager.forwardToLeader(message, leader);
             }
         }
     }

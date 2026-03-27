@@ -27,38 +27,39 @@ public class LeaderElection {
     }
 
     /**
-     * Executes the election logic using a priority-based approach.
+     * Executes the election logic using a deterministic priority-based approach.
      * The first reachable server in the prioritized list (serverPriorityList) is elected as leader.
-     * This follows the 'Bully' style priority where the lowest port (highest priority) 
-     * takes responsibility for coordination if it is online.
+     * 
+     * [DEMO NOTE]: This follows the 'Bully' style priority where the lowest port number 
+     * (e.g., 5001) is assigned the highest priority. If 5001 is offline, 5002 takes over, and so on.
+     * This ensures all nodes agree on a single coordinator without complex voting.
      */
     public synchronized void electLeader() {
-        // System.out.println("[CONSENSUS] Starting election cycle to determine system coordinator...");
-        
         // Iterate through all nodes starting from the highest priority (lowest port)
+        // serverPriorityList is expected to be sorted by priority (e.g., 5001, 5002, 5003)
         for (int potentialLeaderPort : serverPriorityList) {
             
-            // Case 1: This node has the highest priority among all reachable nodes
+            // ROLE 1: If THIS node is the highest priority reachable node, it becomes the LEADER.
             if (potentialLeaderPort == myPort) {
                 if (currentLeaderPort != myPort) {
                     currentLeaderPort = myPort;
-                    System.out.println("\n[CONSENSUS] COORDINATION UPDATE: No higher priority nodes detected. I am now the Leader/Coordinator!");
-                    System.out.println("[CONSENSUS] My role is now to manage cluster-wide message replication.");
+                    System.out.println("\n[CONSENSUS] COORDINATION UPDATE: No higher priority nodes detected.");
+                    System.out.println("[CONSENSUS] ROLE: I am now the ACTIVE LEADER. Responsible for cluster-wide replication.");
                 }
                 return;
             } 
             
-            // Case 2: A higher priority node is reachable
+            // ROLE 2: If a higher priority node (lower port) is online, it must be the LEADER.
             if (isServerAlive(potentialLeaderPort)) {
                 if (currentLeaderPort != potentialLeaderPort) {
                     currentLeaderPort = potentialLeaderPort;
-                    System.out.println("\n[CONSENSUS] COORDINATION UPDATE: Higher priority node found at port " + potentialLeaderPort);
-                    System.out.println("[CONSENSUS] Following " + potentialLeaderPort + " as the cluster leader for consistency.");
+                    System.out.println("\n[CONSENSUS] COORDINATION UPDATE: Higher priority node detected at port " + potentialLeaderPort);
+                    System.out.println("[CONSENSUS] ROLE: I am following " + potentialLeaderPort + " as the coordinator.");
                 }
                 return;
             }
             
-            // If the server is not alive, we continue to the next one in the priority list
+            // If the potential leader is offline, the loop continues to the next highest priority node.
         }
     }
 
