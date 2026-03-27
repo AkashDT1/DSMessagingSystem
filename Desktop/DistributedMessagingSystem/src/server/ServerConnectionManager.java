@@ -5,11 +5,11 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 /**
- * The {@code ServerConnectionManager} handles incoming TCP connection requests.
+ * The {@code ServerConnectionManager} is the entry point for all network communication.
  * 
- * <p>It acts as the primary listener for the messaging server, allowing peer
- * servers or clients to establish communication channels. This is essential 
- * for nodes recovering from failures to quickly reconnect to the cluster.</p>
+ * <p>This background thread continuously listens for incoming connections from both
+ * clients and peer servers. Its robust design ensures that self-healing nodes 
+ * can seamlessly reconnect and reintegrate into the cluster after a failure.</p>
  */
 public class ServerConnectionManager extends Thread {
     private final int port;
@@ -36,10 +36,10 @@ public class ServerConnectionManager extends Thread {
             while (!Thread.currentThread().isInterrupted()) {
                 Socket clientSocket = serverSocket.accept();
                 
-                // Track node-to-node network activity for demo/monitoring
-                System.out.println("[NODE-ACTIVITY] Cluster node at " + clientSocket.getRemoteSocketAddress() + " joined the server for message replication.");
+                // Logging incoming connections helps demonstrate real-time cluster dynamics during valls
+                System.out.println("[RECONNECTION-FLOW] Initializing handshake with: " + clientSocket.getRemoteSocketAddress());
                 
-                // Spawning worker to process current context and help keep node stay responsive 
+                // Spawn a handler to keep the main connection loop non-blocking and responsive
                 new ClientHandler(clientSocket, messagingServer).start();
             }
         } catch (IOException e) {

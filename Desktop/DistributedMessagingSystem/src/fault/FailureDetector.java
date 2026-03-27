@@ -7,12 +7,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * The {@code FailureDetector} is responsible for monitoring the health and accessibility
- * of other server nodes within the distributed messaging system.
+ * The {@code FailureDetector} is the cornerstone of our fault-tolerant design.
+ * It monitors the cluster health by periodically checking if peer nodes are active.
  * 
- * <p>It periodically probes remote servers to ensure they are still active. If a node
- * becomes unreachable, this component flags it so the system can transition to 
- * a fault-tolerant mode (e.g., redirecting requests or pausing replication).</p>
+ * <p>In a distributed system, nodes can fail at any time. This component allows the
+ * server to detect these failures in real-time and adapt accordingly, ensuring 
+ * the messaging service remains available to clients even when parts of the cluster are down.</p>
  */
 public class FailureDetector {
     
@@ -44,11 +44,11 @@ public class FailureDetector {
             }
             return true;
         } catch (IOException e) {
-            // Log once when a server node becomes unresponsive to avoid spamming the console
+            // Only log once when a server node becomes unresponsive to maintain clean logs
             synchronized (unreachableServers) {
                 if (unreachableServers.add(serverId)) {
-                    System.err.println("\n[NODE-FAILURE] ! Connection failed for: " + serverId);
-                    System.err.println("               Status: Internal failure list updated. Retrying connectivity checks...");
+                    System.err.println("\n[NODE-FAILURE] ! ALERT: Node " + serverId + " is no longer responding.");
+                    System.err.println("               Action: Marking as 'UNREACHABLE' and pausing sync protocols.");
                 }
             }
             return false;
