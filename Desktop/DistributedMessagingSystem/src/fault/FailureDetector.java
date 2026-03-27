@@ -10,9 +10,9 @@ import java.util.Set;
  * The {@code FailureDetector} is responsible for monitoring the health and accessibility
  * of other server nodes within the distributed messaging system.
  * 
- * <p>It periodically probes remote servers to ensure they are still active and capable
- * of handling requests, which is crucial for maintaining fault tolerance and 
- * high availability in a distributed environment.</p>
+ * <p>It periodically probes remote servers to ensure they are still active. If a node
+ * becomes unreachable, this component flags it so the system can transition to 
+ * a fault-tolerant mode (e.g., redirecting requests or pausing replication).</p>
  */
 public class FailureDetector {
     
@@ -39,16 +39,16 @@ public class FailureDetector {
             // If it was previously down, log the recovery event
             synchronized (unreachableServers) {
                 if (unreachableServers.remove(serverId)) {
-                    System.out.println("[FAULT] ^ Server RECOVERED and is now reachable: " + serverId);
+                    System.out.println("[FAULT-RECOVERY] ^ Node " + serverId + " is BACK ONLINE. Restoring sync...");
                 }
             }
             return true;
         } catch (IOException e) {
-            // Log once when a server node becomes unresponsive
+            // Log once when a server node becomes unresponsive to avoid spamming the console
             synchronized (unreachableServers) {
                 if (unreachableServers.add(serverId)) {
-                    System.err.println("\n[FAULT] ! Server unreachable: " + serverId);
-                    System.err.println("        Status: Node added to failure list. Retrying in background.");
+                    System.err.println("\n[NODE-FAILURE] ! Connection failed for: " + serverId);
+                    System.err.println("               Status: Internal failure list updated. Retrying connectivity checks...");
                 }
             }
             return false;
