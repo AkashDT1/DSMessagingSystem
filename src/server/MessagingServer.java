@@ -92,7 +92,11 @@ public class MessagingServer {
 
     public void showAllMessages() {
         List<Message> messages = messageStore.getAllMessages();
-        System.out.println("\n===== ALL MESSAGES ON THIS SERVER =====");
+        
+        System.out.println("\n===== CLUSTER STATUS & MESSAGES =====");
+        System.out.println("Node: " + myPort + (leaderElection.amILeader() ? " (ACTIVE_LEADER)" : " (FOLLOWER)"));
+        System.out.println("Current Coordinator: " + (leaderElection.amILeader() ? "Myself" : "Port " + leaderElection.getCurrentLeaderPort()));
+        System.out.println("-------------------------------------");
         if (messages.isEmpty()) {
             System.out.println("No messages stored yet.");
         } else {
