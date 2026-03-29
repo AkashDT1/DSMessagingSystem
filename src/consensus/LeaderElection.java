@@ -16,12 +16,10 @@ import java.util.List;
  *   automatically assumes the coordinator role.
  * - LEADER IMPACT: The elected leader acts as the sequencer for all incoming messages,
  *   ensuring they are replicated to all followers in the same order.
- * - FOLLOWER IMPACT: Followers forward any new client requests to the leader to ensure
- *   consistency across the cluster.
  */
 public class LeaderElection {
     private final int myPort;
-    private final List<Integer> serverPriorityList; // Expected to be sorted by priority
+    private final List<Integer> serverPriorityList; // Sorted list of potential coordinators
     private final FailureDetector healthChecker;
     private int currentLeaderPort;
 
@@ -33,63 +31,63 @@ public class LeaderElection {
         
         System.out.println("[CONSENSUS] Node " + myPort + " initialized consensus module.");
         
-        // Initial election on startup
+        // Initial election on startup to determine role
         electLeader();
     }
 
     /**
-     * Executes the leader election process using a prioritized selection (Bully-style).
-     * The node with the lowest port number (highest priority) that is currently alive becomes the leader.
+     * Executes the leader election process using prioritized selection.
+     * The node with the highest priority (lowest port number) that is CURRENTLY ALIVE becomes the leader.
      * 
-     * COORDINATION ROLE:
-     * - The Leader (Coordinator) is responsible for sequencing and replicating messages to followers.
-     * - Followers synchronize their state with the leader and forward new client requests to it.
+     * WHY THIS WORKS: Since every node runs the same logic over the same prioritized list, 
+     * they all converge on the same leader independently (No split-brain).
      */
     public synchronized void electLeader() {
-        // The cluster relies on deterministic consensus to avoid split-brain scenarios.
+        int previousLeader = currentLeaderPort;
+
         for (int potentialLeaderPort : serverPriorityList) {
             
             // ROLE DETERMINATION:
-            // If I am the highest priority node that hasn't failed, I take the lead.
+            // Check if I am the highest priority node available.
             if (potentialLeaderPort == myPort) {
-                if (currentLeaderPort != myPort) {
-                    currentLeaderPort = myPort;
-                    System.out.println("\n[CONSENSUS] ROLE TRANSITION: Setting role to ACTIVE_LEADER.");
-                    System.out.println("[CONSENSUS] Responsibility: I will now coordinate all cluster-wide replication.");
+                currentLeaderPort = myPort;
+                if (previousLeader != myPort) {
+                    System.out.println("\n[CONSENSUS] COORDINATION UPDATE: Transitioning to ACTIVE_LEADER role.");
+                    System.out.println("[CONSENSUS] Responsibility: I am now the single source of truth for message replication.");
                 }
                 return;
             } 
             
-            // If a higher-priority node is reachable, I must follow it.
+            // Checking if a higher-priority node is reachable.
             if (isServerAlive(potentialLeaderPort)) {
-                if (currentLeaderPort != potentialLeaderPort) {
-                    currentLeaderPort = potentialLeaderPort;
-                    System.out.println("\n[CONSENSUS] ROLE TRANSITION: Setting role to FOLLOWER.");
-                    System.out.println("[CONSENSUS] Action: Routing client requests to coordinator at port " + potentialLeaderPort);
+                currentLeaderPort = potentialLeaderPort;
+                if (previousLeader != potentialLeaderPort) {
+                    System.out.println("\n[CONSENSUS] COORDINATION UPDATE: Transitioning to FOLLOWER role.");
+                    System.out.println("[CONSENSUS] Action: Forwarding all client data to coordinator at port " + potentialLeaderPort);
                 }
                 return;
             }
             
-            // If the higher-priority node is dead, we check the next one in the list.
+            // Higher priority node is DOWN, proceed to check next potential leader in the list.
         }
     }
 
     /**
-     * @return true if this node is currently the elected leader.
+     * Helper to verify if this node holds the leader role.
      */
     public boolean amILeader() {
         return myPort == currentLeaderPort;
     }
     
     /**
-     * @return The port number of the current leader.
+     * Returns the port of the currently elected leader.
      */
     public int getCurrentLeaderPort() {
         return currentLeaderPort;
     }
 
     /**
-     * Checks if a server at the given port is reachable.
+     * Interface with health check module to determine node reachability.
      */
     public boolean isServerAlive(int port) {
         return healthChecker.isServerReachable("localhost", port);

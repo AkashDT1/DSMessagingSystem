@@ -50,12 +50,12 @@ public class MessagingServer {
             }
         }).start();
 
-        // Heartbeat Monitor: Periodically re-evaluates the cluster state to handle potential node failures or joins.
-        // This keeps the leader role up-to-date and avoids split-brain behavior.
+        // Cluster Coordination Monitor: Periodically re-evaluates leader health.
+        // This ensures the cluster converges on a new coordinator if the current one fails.
         new Thread(() -> {
             while (true) {
                 try {
-                    Thread.sleep(5000); // Heartbeat frequency (5 seconds)
+                    Thread.sleep(5000); // Check cluster state every 5 seconds
                     leaderElection.electLeader(); 
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -76,15 +76,13 @@ public class MessagingServer {
         // 2. COORDINATION LOGIC: Actions differ based on the node's cluster role (Leader or Follower)
         if (isNewMessage && !message.isReplication()) {
             if (leaderElection.amILeader()) {
-                // If this node is the LEADER, it must coordinate replication across all other nodes.
-                // This ensures that all messages are distributed consistently within the cluster.
-                System.out.println("[COORDINATION] Active Leader Role: Distributing message sequence to the cluster.");
+                // LEADER ROLE: Responsible for sequencing and distributing messages to ensure cluster-wide consistency.
+                System.out.println("[COORDINATION] Leader Action: Broadcasting message sequence to all followers.");
                 replicationManager.replicateMessage(message);
             } else {
-                // If this node is a FOLLOWER, it cannot replicate the message itself.
-                // Instead, it forwards the request to the current Leader for centralized coordination.
+                // FOLLOWER ROLE: Forward new client requests to the active leader for centralized sequencing.
                 int leader = leaderElection.getCurrentLeaderPort();
-                System.out.println("[COORDINATION] Follower Role: Forwarding message to coordinator at port " + leader);
+                System.out.println("[COORDINATION] Follower Action: Routing request to active coordinator at port " + leader);
                 replicationManager.forwardToLeader(message, leader);
             }
         }
