@@ -50,12 +50,13 @@ public class MessagingServer {
             }
         }).start();
 
-        // Background consensus/monitoring thread to handle dynamic leader adjustments
+        // Heartbeat Monitor: Periodically re-evaluates the cluster state to handle potential node failures or joins.
+        // This keeps the leader role up-to-date and avoids split-brain behavior.
         new Thread(() -> {
             while (true) {
                 try {
-                    Thread.sleep(5000); // Periodic heartbeat check
-                    leaderElection.electLeader();
+                    Thread.sleep(5000); // Heartbeat frequency (5 seconds)
+                    leaderElection.electLeader(); 
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -72,15 +73,18 @@ public class MessagingServer {
             System.out.println("[" + type + "] Committed message from " + message.getSender() + ": " + message.getContent());
         }
 
-        // 2. Replication Logic Coordinated By Current Leader (Consensus Integration)
+        // 2. COORDINATION LOGIC: Actions differ based on the node's cluster role (Leader or Follower)
         if (isNewMessage && !message.isReplication()) {
             if (leaderElection.amILeader()) {
-                System.out.println("[CONSENSUS_COORDINATION] Active Leader Role: Managing cluster-wide message distribution.");
+                // If this node is the LEADER, it must coordinate replication across all other nodes.
+                // This ensures that all messages are distributed consistently within the cluster.
+                System.out.println("[COORDINATION] Active Leader Role: Distributing message sequence to the cluster.");
                 replicationManager.replicateMessage(message);
             } else {
-                // Determine current coordinator for forwarding
+                // If this node is a FOLLOWER, it cannot replicate the message itself.
+                // Instead, it forwards the request to the current Leader for centralized coordination.
                 int leader = leaderElection.getCurrentLeaderPort();
-                System.out.println("[CONSENSUS_COORDINATION] Role: Follower. Forwarding to active leader at port " + leader);
+                System.out.println("[COORDINATION] Follower Role: Forwarding message to coordinator at port " + leader);
                 replicationManager.forwardToLeader(message, leader);
             }
         }
@@ -93,12 +97,13 @@ public class MessagingServer {
     public void showAllMessages() {
         List<Message> messages = messageStore.getAllMessages();
         
-        System.out.println("\n===== CLUSTER STATUS & MESSAGES =====");
-        System.out.println("Node: " + myPort + (leaderElection.amILeader() ? " (ACTIVE_LEADER)" : " (FOLLOWER)"));
-        System.out.println("Current Coordinator: " + (leaderElection.amILeader() ? "Myself" : "Port " + leaderElection.getCurrentLeaderPort()));
+        System.out.println("\n===== CLUSTER COORDINATION STATUS =====");
+        System.out.println("Node: " + myPort + (leaderElection.amILeader() ? " [ACTIVE_COORDINATOR]" : " [FOLLOWER]"));
+        System.out.println("Coordinator: " + (leaderElection.amILeader() ? "Myself (Responsible for replication)" : "Port " + leaderElection.getCurrentLeaderPort()));
+        System.out.println("Follower Role: " + (!leaderElection.amILeader() ? "Forwarding client requests to coordinator" : "Serving direct requests and coordinating replication"));
         System.out.println("-------------------------------------");
         if (messages.isEmpty()) {
-            System.out.println("No messages stored yet.");
+            System.out.println("No messages stored yet in the cluster.");
         } else {
             for (Message m : messages) {
                 System.out.println("[" + m.getSender() + "]: " + m.getContent());
