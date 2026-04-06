@@ -6,13 +6,15 @@ import java.net.Socket;
 
 public class FailureDetector {
     
-    // adding timeout to check if node down
+    // now we can see some logs for failure
     public boolean checkNode(String host, int port) {
         try (Socket socket = new Socket()) {
+            socket.setSoTimeout(2000);
             socket.connect(new InetSocketAddress(host, port), 2000);
             return true;
         } catch (IOException e) {
-            // failed so node is down
+            // node down so print something
+            System.err.println("NODE DOWN: server at port " + port + " is not replying");
             return false;
         }
     }
