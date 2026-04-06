@@ -31,11 +31,9 @@ public class ReplicationManager {
      * @param message The original message to replicate.
      */
     public void replicateMessage(Message message) {
-        System.out.println("[Replication] Initiating replication for message ID: " + message.getMessageId() + "...");
-        
-        // Mark message as a replica to prevent infinite circular replication
+        // need to mark this as replica so it doesnt loop
         message.setReplication(true); 
-
+        System.out.println("broadcasting message " + message.getMessageId() + " to all nodes");
         if (otherServerPorts == null || otherServerPorts.isEmpty()) {
             System.out.println("no ports to replicate to");
             return;
