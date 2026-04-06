@@ -14,6 +14,11 @@ import java.util.Date;
  */
 public class TimeManager {
     
+    // adding timestamp to message
+    public static Message createWithTime(String sender, String receiver, String content) {
+        return new Message(sender, receiver, content, getCurrentTime());
+    }
+
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm:ss.SSS");
 
     /**
