@@ -110,16 +110,16 @@ public class ReplicationManager {
              ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
              ObjectInputStream in = new ObjectInputStream(socket.getInputStream())) {
 
-            // Transmit the serialized object
+            System.out.println("sending to port " + port);
             out.writeObject(obj);
             out.flush();
+            System.out.println("waiting for ack from " + port);
             
-            // Wait for ACK confirmation from the target node
             in.readObject(); 
+            System.out.println("got ack from " + port);
 
         } catch (Exception e) {
-            // Log connection failures without crashing, allowing the system to remain available
-            System.err.println("[Replication] Peer server at port " + port + " is currently unreachable. Skipping transmission.");
+            System.err.println("failed to send to port " + port + ": " + e.getMessage());
         }
     }
 }
