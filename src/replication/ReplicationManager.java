@@ -75,9 +75,11 @@ public class ReplicationManager {
                 ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
                 ObjectInputStream in = new ObjectInputStream(socket.getInputStream())) {
 
+            // asking the leader for the messages we missed
             out.writeObject("SYNC_REQUEST");
             out.flush();
 
+            // wait for the list of messages
             Object received = in.readObject();
             if (received == null) {
                 System.out.println("no messages received from sync");
