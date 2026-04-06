@@ -57,9 +57,14 @@ public class TimeManager {
      * @return A comparator where older messages (smaller timestamps) precede newer ones.
      */
     public static Comparator<Message> getTimestampComparator() {
-        return Comparator
-                .comparingLong(Message::getTimestamp)
-                .thenComparing(Message::getMessageId);
+        return (m1, m2) -> {
+            // improved this for same timestamps
+            int res = Long.compare(m1.getTimestamp(), m2.getTimestamp());
+            if (res == 0) {
+                return m1.getMessageId().compareTo(m2.getMessageId());
+            }
+            return res;
+        };
     }
 
     /**
