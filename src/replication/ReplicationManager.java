@@ -79,14 +79,18 @@ public class ReplicationManager {
             out.flush();
 
             Object received = in.readObject();
+            if (received == null) {
+                System.out.println("no messages received from sync");
+                return;
+            }
             if (received instanceof List) {
                 @SuppressWarnings("unchecked")
                 List<Message> allMessages = (List<Message>) received;
                 for (Message m : allMessages) {
-                    m.setReplication(true); // Prevent re-replication of synced messages locally
+                    m.setReplication(true); // stop loop
                     messagingServer.processMessage(m);
                 }
-                System.out.println("Synchronization complete: " + allMessages.size() + " messages synchronized.");
+                System.out.println("synced " + allMessages.size() + " messages");
             }
         } catch (Exception e) {
             System.err.println("Leader sync failed at port " + leaderPort + ". " + e.getMessage() + ". Moving on with local state.");
