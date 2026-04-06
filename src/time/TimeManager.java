@@ -36,12 +36,12 @@ public class TimeManager {
         return (m1, m2) -> {
             // if time is same we handle the issue using IDs
             if (m1.getTimestamp() == m2.getTimestamp()) {
-                int res = m1.getMessageId().compareTo(m2.getMessageId());
-                if (res == 0) {
-                    // last fallback sorting
-                    return m1.getSender().compareTo(m2.getSender());
-                }
-                return res;
+                // improved same time handling
+                int idCompare = m1.getMessageId().compareTo(m2.getMessageId());
+                if (idCompare != 0) return idCompare;
+                
+                // final fallback sorting 
+                return m1.getSender().compareTo(m2.getSender());
             }
             return Long.compare(m1.getTimestamp(), m2.getTimestamp());
         };
