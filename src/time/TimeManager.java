@@ -74,6 +74,7 @@ public class TimeManager {
      * @return result < 0 if m1 is older, > 0 if m2 is older, 0 if identical.
      */
     public static int compare(Message m1, Message m2) {
+        if (m1 == null || m2 == null) return 0; // quick fix for null
         return getTimestampComparator().compare(m1, m2);
     }
 }
