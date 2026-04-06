@@ -21,4 +21,9 @@ public class FailureDetector {
         System.err.println("NODE DOWN: server " + port + " really not working!");
         return false;
     }
+
+    // handle when node is coming back up
+    public void nodeRecovered(int port) {
+        System.out.println("Server at " + port + " is now recovered and ready!");
+    }
 }
