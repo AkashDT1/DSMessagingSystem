@@ -43,9 +43,11 @@ public class LeaderElection {
      * they all converge on the same leader independently (No split-brain).
      */
     public synchronized void electLeader() {
+        System.out.println("[DEBUG] Starting election now...");
         int previousLeader = currentLeaderPort;
 
         for (int potentialLeaderPort : serverPriorityList) {
+            System.out.println("[DEBUG] Checking node: " + potentialLeaderPort);
             
             // ROLE DETERMINATION:
             // Check if I am the highest priority node available.
