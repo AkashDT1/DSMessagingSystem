@@ -48,6 +48,7 @@ public class LeaderElection {
         int previousLeader = currentLeaderPort;
 
         for (int potentialLeaderPort : serverPriorityList) {
+            if (potentialLeaderPort <= 0) continue; // fix for any invalid port bug
             System.out.println("[DEBUG] Checking node: " + potentialLeaderPort);
             
             // ROLE DETERMINATION:
