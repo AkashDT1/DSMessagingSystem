@@ -6,56 +6,111 @@ import time.TimeManager;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
+/**
+ * Handles persistent storage of messaging data.
+ * Messages are stored in a local `.dat` file to recover state on restart.
+ */
 public class MessageStore {
     private List<Message> messages;
+    private Set<String> seenMessageIds;
     private int port;
+    
     private static final String STORAGE_FILE_PREFIX = "server_storage_";
 
     public MessageStore(int port) {
         this.port = port;
+        
+        // 1. Recover previously saved messages from disk
         this.messages = loadMessagesFromFile();
+        
+        // 2. Initialize our deduplication set with loaded message IDs (in-memory optimized lookup)
+        // This ensures identical messages arriving from network replication or leader synchronization
+        // are identified and discarded, enforcing exactly-once local storage consistency.
+        this.seenMessageIds = new HashSet<>();
+        for (Message m : this.messages) {
+            this.seenMessageIds.add(m.getMessageId());
+        }
     }
 
     private String getFileName() {
         return STORAGE_FILE_PREFIX + port + ".dat";
     }
 
+    /**
+     * Stores a message locally and persists the updated state to disk.
+     * 
+     * **Consistency & Duplicate Handling Strategy:**
+     * In a distributed system, a single message may arrive multiple times 
+     * (e.g., from client retries, network replication, or node synchronization). 
+     * We use a HashSet of known message IDs (seenMessageIds) to detect and ignore 
+     * duplicates in O(1) time. This guarantees that every node maintains a clean, 
+     * consistent state without redundant records.
+     *
+     * @param message The given message object to store.
+     * @return true if successfully stored; false if discarded as duplicate.
+     */
     public synchronized boolean storeMessage(Message message) {
-        for (Message m : messages) {
-            if (m.getMessageId().equals(message.getMessageId())) {
-                return false;
-            }
+        String msgId = message.getMessageId();
+        
+        // Attempt to add the ID to our set. Returns false if already present.
+        boolean isNewMessage = seenMessageIds.add(msgId);
+        
+        if (!isNewMessage) {
+            System.out.println("[Store] Duplicate message detected (ID: " + msgId + "). Ignoring.");
+            return false;
         }
+        
+        // Message is new: append to the internal list and persist to disk
         messages.add(message);
         saveMessagesToFile();
+        
         return true;
     }
 
+    /**
+     * Retrieves all stored messages, sorted chronologically.
+     * Creates a defensive copy to prevent concurrent modification issues.
+     *
+     * @return A time-ordered list of messages.
+     */
     public synchronized List<Message> getAllMessages() {
+        // Defensive copy allows safe iteration and sorting
         List<Message> sortedMessages = new ArrayList<>(messages);
         Collections.sort(sortedMessages, TimeManager.getTimestampComparator());
         return sortedMessages;
     }
 
+    /**
+     * Serializes the current list of messages to the local disk.
+     */
     private synchronized void saveMessagesToFile() {
         try (java.io.ObjectOutputStream out = new java.io.ObjectOutputStream(
                 new java.io.FileOutputStream(getFileName()))) {
             out.writeObject(messages);
         } catch (java.io.IOException e) {
-            System.err.println("Failed to save messages to file.");
+            System.err.println("Failed to save messages to file: " + getFileName());
         }
     }
 
+    /**
+     * Deserializes existing messages from disk during startup.
+     * 
+     * @return The loaded list of messages, or an empty list if none exist or an error occurs.
+     */
     @SuppressWarnings("unchecked")
     private List<Message> loadMessagesFromFile() {
         java.io.File file = new java.io.File(getFileName());
-        if (!file.exists())
+        if (!file.exists()) {
             return new ArrayList<>();
+        }
 
         try (java.io.ObjectInputStream in = new java.io.ObjectInputStream(new java.io.FileInputStream(file))) {
             return (List<Message>) in.readObject();
         } catch (Exception e) {
+            System.err.println("Warning: Could not load initial messages from " + getFileName());
             return new ArrayList<>();
         }
     }
