@@ -12,7 +12,6 @@ public class TimeManager {
     public static Message createWithTime(String sender, String receiver, String content) {
         return new Message(sender, receiver, content, getCurrentTime());
     }
-
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm:ss.SSS");
 
     // gets current system time
