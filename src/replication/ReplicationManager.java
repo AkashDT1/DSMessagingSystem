@@ -41,7 +41,7 @@ public class ReplicationManager {
 
         for (int targetPort : otherServerPorts) {
             System.out.println("Sending replica to port: " + targetPort);
-            sendMessageToPort(message, targetPort);
+            sendToNode(message, targetPort);
         }
     }
 
@@ -53,7 +53,7 @@ public class ReplicationManager {
      */
     public void forwardToLeader(Message message, int leaderPort) {
         System.out.println("forwarding the message to leader at port " + leaderPort + " now");
-        sendMessageToPort(message, leaderPort);
+        sendToNode(message, leaderPort);
     }
 
     /**
@@ -107,7 +107,7 @@ public class ReplicationManager {
      * @param obj  The object (Message or Sync Request) to send.
      * @param port The target server port.
      */
-    private void sendMessageToPort(Object obj, int port) {
+    private void sendToNode(Object obj, int port) {
         try (Socket socket = new Socket("localhost", port);
              ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
              ObjectInputStream in = new ObjectInputStream(socket.getInputStream())) {
