@@ -8,6 +8,8 @@ public class FailureDetector {
     
     // improving retry logic with small wait
     public boolean checkNode(String host, int port) {
+        if (port < 0) return false; // fix check for negative port
+
         int retries = 3;
         for (int i = 0; i < retries; i++) {
             try (Socket socket = new Socket()) {
@@ -24,6 +26,8 @@ public class FailureDetector {
 
     // handle when node is coming back up
     public void nodeRecovered(int port) {
-        System.out.println("Server at " + port + " is now recovered and ready!");
+        if (port > 0) {
+            System.out.println("Server at " + port + " is now recovered and ready!");
+        }
     }
 }
