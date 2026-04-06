@@ -75,6 +75,17 @@ public class LeaderElection {
     }
 
     /**
+     * Simple method to check if the leader is alive. 
+     * If not alive, we must re-elect.
+     */
+    public void fixLeaderIfDead() {
+        if (currentLeaderPort != -1 && !isServerAlive(currentLeaderPort)) {
+            System.out.println("[CONSENSUS] Leader is gone! Re-electing now.");
+            electLeader();
+        }
+    }
+
+    /**
      * Helper to verify if this node holds the leader role.
      */
     public boolean amILeader() {
