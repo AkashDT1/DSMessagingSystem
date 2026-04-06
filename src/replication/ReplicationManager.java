@@ -92,8 +92,10 @@ public class ReplicationManager {
                 }
                 System.out.println("synced " + allMessages.size() + " messages");
             }
+        } catch (java.net.ConnectException ce) {
+            System.err.println("couldnt connect to leader for syncing");
         } catch (Exception e) {
-            System.err.println("Leader sync failed at port " + leaderPort + ". " + e.getMessage() + ". Moving on with local state.");
+            System.err.println("leader sync failed because: " + e.getMessage());
         }
     }
 
