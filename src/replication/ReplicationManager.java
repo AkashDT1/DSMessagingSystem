@@ -36,8 +36,13 @@ public class ReplicationManager {
         // Mark message as a replica to prevent infinite circular replication
         message.setReplication(true); 
 
+        if (otherServerPorts == null || otherServerPorts.isEmpty()) {
+            System.out.println("no ports to replicate to");
+            return;
+        }
+
         for (int targetPort : otherServerPorts) {
-            System.out.println("[Replication] -> Sending replica to peer at port " + targetPort);
+            System.out.println("Sending replica to port: " + targetPort);
             sendMessageToPort(message, targetPort);
         }
     }
@@ -49,7 +54,7 @@ public class ReplicationManager {
      * @param leaderPort The port of the designated cluster leader.
      */
     public void forwardToLeader(Message message, int leaderPort) {
-        System.out.println("Forwarding client request to leader at port " + leaderPort + "...");
+        System.out.println("forwarding the message to leader at port " + leaderPort + " now");
         sendMessageToPort(message, leaderPort);
     }
 
