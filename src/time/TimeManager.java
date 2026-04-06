@@ -35,13 +35,11 @@ public class TimeManager {
     // comparator to sort messages by timestamp
     public static Comparator<Message> getTimestampComparator() {
         return (m1, m2) -> {
-            // improved this for same timestamps
-            int res = Long.compare(m1.getTimestamp(), m2.getTimestamp());
-            if (res == 0) {
-                // tie breaker using id
+            // if time is same we handle the issue using IDs
+            if (m1.getTimestamp() == m2.getTimestamp()) {
                 return m1.getMessageId().compareTo(m2.getMessageId());
             }
-            return res;
+            return Long.compare(m1.getTimestamp(), m2.getTimestamp());
         };
     }
 
