@@ -5,11 +5,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 /**
- * The {@code ServerConnectionManager} is the entry point for all network communication.
- * 
- * <p>This background thread continuously listens for incoming connections from both
- * clients and peer servers. Its robust design ensures that self-healing nodes 
- * can seamlessly reconnect and reintegrate into the cluster after a failure.</p>
+ * Responsibility: Listens for incoming client connections (Distributed nodes)
+ * and assigns them to worker threads to handle their requests.
  */
 public class ServerConnectionManager extends Thread {
     private final int port;
@@ -20,34 +17,23 @@ public class ServerConnectionManager extends Thread {
         this.messagingServer = messagingServer;
     }
 
-    /**
-     * Executes the main listening loop for the connection manager.
-     * 
-     * <p>Initializes the {@code ServerSocket} and iterates continuously to 
-     * accept new connections. The loop terminates gracefully if the thread 
-     * is interrupted during its runtime.</p>
-     */
     @Override
     public void run() {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
-            System.out.println("[SYSTEM-UP] Socket initialized on Port " + port + ". Listening for cluster traffic...");
+            System.out.println(">>> Messaging Server instance started on port " + port);
 
-            // Main loop: accepting incoming requests for data/message sync
             while (!Thread.currentThread().isInterrupted()) {
+                // Accepts incoming connections from other messaging nodes or clients
                 Socket clientSocket = serverSocket.accept();
                 
-                // Logging incoming connections helps demonstrate real-time cluster dynamics during valls
-                System.out.println("[RECONNECTION-FLOW] Initializing handshake with: " + clientSocket.getRemoteSocketAddress());
-                
-                // Spawn a handler to keep the main connection loop non-blocking and responsive
+                // Spawn a new handler for each client for concurrent request processing
                 new ClientHandler(clientSocket, messagingServer).start();
             }
         } catch (IOException e) {
-            System.err.println("\n[FATAL-NETWORK] Port " + port + " could not be opened.");
-            System.err.println("                Reason: Already in use or insufficient privileges. Shutting down node.");
+            System.err.println("\n[ERROR] Network failure or Port " + port + " is already in use.");
+            System.err.println("Suggestion: Check for other running instances or zombie processes.");
+            System.err.println("Detailed reason: " + e.getMessage() + "\n");
         }
     }
-
 }
-
 

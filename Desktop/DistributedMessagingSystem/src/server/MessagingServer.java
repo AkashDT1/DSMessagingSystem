@@ -34,24 +34,19 @@ public class MessagingServer {
     public void startServer() {
         connectionManager.start();
 
+        // Start Web UI Dashboard adapter
+        new WebInterface(this, myPort).start();
+
         // Recovery Logic: Always try to sync from any available server on startup
         new Thread(() -> {
             try {
-                Thread.sleep(2000); 
-                System.out.println("[RECOV] Initiating state synchronization with active neighbors...");
-                boolean synced = false;
+                Thread.sleep(2000); // Wait for connection manager to start
+                System.out.println("Checking with neighbors to catch up on missed messages...");
                 for (int otherPort : allServerPorts) {
                     if (otherPort != myPort && leaderElection.isServerAlive(otherPort)) {
-                        System.out.println("[RECOV] Peer found at port " + otherPort + ". Requesting state sync...");
                         replicationManager.requestSyncFrom(otherPort);
-                        synced = true;
-                        break; 
+                        break; // Stop after first successful sync attempt
                     }
-                }
-                if (!synced) {
-                    System.out.println("[RECOV] Warning: No active neighbors found for sync. Starting with local store only.");
-                } else {
-                    System.out.println("[RECOV] Recovery sync complete. Cluster state should be up-to-date.");
                 }
             } catch (InterruptedException e) {
             }
@@ -85,8 +80,8 @@ public class MessagingServer {
             if (leaderElection.amILeader()) {
                 replicationManager.replicateMessage(message);
             } else {
-                // Node is not currently the cluster leader, so redirect logic to the leader
-                System.out.println("[CLUSTER] Node status: Follower. Forwarding message to current Leader at port " + leaderElection.getCurrentLeaderPort());
+                // Not the leader, forward up to the leader so it manages the system replication
+                System.out.println("Forwarding message to leader to handle replication.");
                 replicationManager.forwardToLeader(message, leaderElection.getCurrentLeaderPort());
             }
         }
@@ -94,6 +89,14 @@ public class MessagingServer {
 
     public MessageStore getMessageStore() {
         return messageStore;
+    }
+
+    public LeaderElection getLeaderElection() {
+        return leaderElection;
+    }
+
+    public int getMyPort() {
+        return myPort;
     }
 
     public void showAllMessages() {

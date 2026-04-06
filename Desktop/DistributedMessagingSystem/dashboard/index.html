@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SA3 Distributed Messaging System - Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="description" content="Modern real-time dashboard for SA3 Distributed Messaging System.">
+</head>
+<body class="dark-theme">
+    <div class="app-container">
+        <!-- Sidebar Navigation (Optional for premium feel) -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo-orb"></div>
+                <h1>SA3 DMS</h1>
+            </div>
+            
+            <nav class="nav-menu">
+                <div class="nav-item active" id="nav-dashboard">
+                    <span class="icon">📊</span>
+                    <span>Dashboard</span>
+                </div>
+            </nav>
+
+            <div class="client-selector">
+                <label for="nodeSelect">Connect to Node</label>
+                <select id="nodeSelect">
+                    <option value="3001">Server 1 (Port 5001)</option>
+                    <option value="3002">Server 2 (Port 5002)</option>
+                    <option value="3003">Server 3 (Port 5003)</option>
+                </select>
+            </div>
+
+            <div class="client-selector">
+                <label for="clientSelect">Select Client</label>
+                <select id="clientSelect">
+                    <option value="Client A">Client A</option>
+                    <option value="Client B">Client B</option>
+                </select>
+            </div>
+
+            <div class="server-status">
+                <h3>Server Status</h3>
+                <div class="server-card" id="server-1">
+                    <div class="status-indicator online"></div>
+                    <div class="server-info">
+                        <span class="server-name">Server 1</span>
+                        <div class="status-tag-area">
+                            <span class="status-label">Online</span>
+                            <span class="leader-badge hidden">Leader</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="server-card" id="server-2">
+                    <div class="status-indicator online"></div>
+                    <div class="server-info">
+                        <span class="server-name">Server 2</span>
+                        <div class="status-tag-area">
+                            <span class="status-label">Online</span>
+                            <span class="leader-badge hidden">Leader</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="server-card" id="server-3">
+                    <div class="status-indicator online"></div>
+                    <div class="server-info">
+                        <span class="server-name">Server 3</span>
+                        <div class="status-tag-area">
+                            <span class="status-label">Online</span>
+                            <span class="leader-badge hidden">Leader</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="main-header">
+                <h2>SA3 Distributed Messaging System</h2>
+                <div class="header-stats">
+                    <div class="stat">
+                        <span class="stat-label">Latency</span>
+                        <span class="stat-value">12ms</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Messages</span>
+                        <span class="stat-value" id="msg-count">0</span>
+                    </div>
+                </div>
+            </header>
+
+            <section class="dashboard-grid">
+                <!-- Chat Panel -->
+                <div class="panel chat-panel">
+                    <div class="panel-header">
+                        <h3>Real-time Chat Window</h3>
+                        <div class="panel-actions">
+                            <span class="active-badge">Live</span>
+                        </div>
+                    </div>
+                    <div class="chat-container" id="chat-window">
+                        <!-- Messages populate here -->
+                        <div class="empty-state">
+                            <p>No messages yet. Start communicating!</p>
+                        </div>
+                    </div>
+                    <div class="chat-input-area">
+                        <input type="text" id="message-input" placeholder="Type your message here..." autocomplete="off">
+                        <button id="send-btn">
+                            <span class="btn-text">Send</span>
+                            <span class="btn-icon">🚀</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Side Panels: Logs and Controls -->
+                <div class="side-panels">
+                    <div class="panel logs-panel">
+                        <div class="panel-header">
+                            <h3>System Logs</h3>
+                            <button class="clear-btn" id="clear-logs">Clear</button>
+                        </div>
+                        <div class="logs-container" id="logs-window">
+                            <!-- Logs populate here -->
+                            <div class="log-entry system">System initialized. Welcome back.</div>
+                        </div>
+                    </div>
+
+                    <div class="panel controls-panel">
+                        <div class="panel-header">
+                            <h3>Demo Controls</h3>
+                        </div>
+                        <div class="controls-grid">
+                            <button class="control-btn warning" id="fail-server-btn">
+                                <span>Simulate Server Failure</span>
+                            </button>
+                            <button class="control-btn success" id="restore-server-btn">
+                                <span>Restore Server</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Overlay for server failure simulation -->
+    <div id="selection-overlay" class="hidden">
+        <div class="selection-modal">
+            <h3>Select Server to Fail/Restore</h3>
+            <div class="modal-buttons">
+                <button onclick="handleModalSelection(1)">Server 1</button>
+                <button onclick="handleModalSelection(2)">Server 2</button>
+                <button onclick="handleModalSelection(3)">Server 3</button>
+                <button class="cancel" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
