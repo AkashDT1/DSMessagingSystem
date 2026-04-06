@@ -6,16 +6,19 @@ import java.net.Socket;
 
 public class FailureDetector {
     
-    // now we can see some logs for failure
+    // basic retry if node not responding
     public boolean checkNode(String host, int port) {
-        try (Socket socket = new Socket()) {
-            socket.setSoTimeout(2000);
-            socket.connect(new InetSocketAddress(host, port), 2000);
-            return true;
-        } catch (IOException e) {
-            // node down so print something
-            System.err.println("NODE DOWN: server at port " + port + " is not replying");
-            return false;
+        int retries = 2;
+        for (int i = 0; i < retries; i++) {
+            try (Socket socket = new Socket()) {
+                socket.connect(new InetSocketAddress(host, port), 2000);
+                return true;
+            } catch (IOException e) {
+                // try once more
+                System.out.println("trying to connect to " + port + " again...");
+            }
         }
+        System.err.println("NODE DOWN: server " + port + " really not working!");
+        return false;
     }
 }
