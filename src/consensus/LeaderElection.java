@@ -103,7 +103,15 @@ public class LeaderElection {
      * Interface with health check module to determine node reachability.
      */
     public boolean isServerAlive(int port) {
-        return healthChecker.isServerReachable("localhost", port);
+        // trying multiple times if it fails
+        for (int i = 0; i < 3; i++) {
+            if (healthChecker.isServerReachable("localhost", port)) {
+                return true;
+            }
+            System.out.println("[DEBUG] node " + port + " not responding, retrying " + (i + 1));
+            try { Thread.sleep(200); } catch (Exception e) {}
+        }
+        return false;
     }
 }
 
