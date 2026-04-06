@@ -3,128 +3,50 @@ package consensus;
 import fault.FailureDetector;
 import java.util.List;
 
-/**
- * Handles deterministic leader election using a priority-based selection algorithm.
- * 
- * CORE LOGIC (Deterministic Consensus):
- * 1. Each server is assigned a static priority based on its port (lower port = higher priority).
- * 2. This ensures all alive nodes always agree on the same leader without expensive voting rounds.
- * 3. Priority Order: 5001 (Highest) > 5002 > 5003 (Lowest).
- * 
- * FAULT TOLERANCE & COORDINATION:
- * - If the current leader (e.g., 5001) fails, the next available node (5002) detects it and
- *   automatically assumes the coordinator role.
- * - LEADER IMPACT: The elected leader acts as the sequencer for all incoming messages,
- *   ensuring they are replicated to all followers in the same order.
- */
 public class LeaderElection {
-    private final int myPort;
-    private final List<Integer> serverPriorityList; // Sorted list of potential coordinators
-    private final FailureDetector healthChecker;
+    private int myServerId;
+    private List<Integer> allServerPorts; 
+    private FailureDetector failureDetector;
     private int currentLeaderPort;
 
-    public LeaderElection(int myPort, List<Integer> allServerPorts) {
-        this.myPort = myPort;
-        this.serverPriorityList = new java.util.ArrayList<>(allServerPorts);
-        java.util.Collections.sort(this.serverPriorityList); // sort to make sure lower port is first
-        this.healthChecker = new FailureDetector();
+    public LeaderElection(int myServerId, List<Integer> allServerPorts) {
+        this.myServerId = myServerId;
+        this.allServerPorts = allServerPorts;
+        this.failureDetector = new FailureDetector();
         this.currentLeaderPort = -1;
-        
-        System.out.println("[CONSENSUS] Node " + myPort + " initialized consensus module.");
-        
-        // Initial election on startup to determine role
         electLeader();
     }
 
-    /**
-     * Executes the leader election process using prioritized selection.
-     * The node with the highest priority (lowest port number) that is CURRENTLY ALIVE becomes the leader.
-     * 
-     * WHY THIS WORKS: Since every node runs the same logic over the same prioritized list, 
-     * they all converge on the same leader independently (No split-brain).
-     */
+    // Priority-based algorithm
     public synchronized void electLeader() {
-        System.out.println("[DEBUG] Starting election now...");
-        long timeout = System.currentTimeMillis() + 2000; // timeout after 2 secs
-        int previousLeader = currentLeaderPort;
-
-        for (int potentialLeaderPort : serverPriorityList) {
-            if (System.currentTimeMillis() > timeout) {
-                System.out.println("[DEBUG] election timeout happening, stopping early.");
-                break;
-            }
-            if (potentialLeaderPort <= 0) continue; // fix for any invalid port bug
-            System.out.println("[DEBUG] Checking node: " + potentialLeaderPort);
-            
-            // ROLE DETERMINATION:
-            // Check if I am the highest priority node available.
-            if (potentialLeaderPort == myPort) {
-                currentLeaderPort = myPort;
-                if (previousLeader != myPort) {
-                    System.out.println("\n[CONSENSUS] COORDINATION UPDATE: Transitioning to ACTIVE_LEADER role.");
-                    System.out.println("[CONSENSUS] Responsibility: I am now the single source of truth for message replication.");
+        for (int port : allServerPorts) {
+            if (port == myServerId) {
+                if (currentLeaderPort != myServerId) {
+                    currentLeaderPort = myServerId;
+                    System.out.println("\n*** I am the new Leader! (Port: " + myServerId + ") ***");
                 }
                 return;
-            } 
-            
-            // checking if higher priority node is there
-            if (isServerAlive(potentialLeaderPort)) {
-                currentLeaderPort = potentialLeaderPort;
-                if (previousLeader != potentialLeaderPort) {
-                    System.out.println("\n[CONSENSUS] COORDINATION UPDATE: Transitioning to FOLLOWER role.");
-                    System.out.println("[CONSENSUS] Action: Forwarding all client data to coordinator at port " + potentialLeaderPort);
+            } else {
+                if (failureDetector.isServerReachable("localhost", port)) {
+                    if (currentLeaderPort != port) {
+                        currentLeaderPort = port;
+                        System.out.println("\n*** Server at port " + port + " is the Leader. ***");
+                    }
+                    return;
                 }
-                return;
             }
-            
-            // node is down, check next one
-        }
-        
-        // checking the edge case when all are down (review comment)
-        currentLeaderPort = -1;
-        System.out.println("[DEBUG] warning: seems like all nodes are down right now");
-    }
-
-    /**
-     * Simple method to check if the leader is alive. 
-     * If not alive, we must re-elect.
-     */
-    public void fixLeaderIfDead() {
-        if (currentLeaderPort != -1 && !isServerAlive(currentLeaderPort)) {
-            System.out.println("[CONSENSUS] Leader is gone! Re-electing now.");
-            electLeader();
         }
     }
 
-    /**
-     * Helper to verify if this node holds the leader role.
-     */
     public boolean amILeader() {
-        return myPort == currentLeaderPort;
+        return myServerId == currentLeaderPort;
     }
     
-    /**
-     * Returns the port of the currently elected leader.
-     */
     public int getCurrentLeaderPort() {
         return currentLeaderPort;
     }
 
-    /**
-     * Interface with health check module to determine node reachability.
-     */
     public boolean isServerAlive(int port) {
-        // trying multiple times if it fails
-        for (int i = 0; i < 3; i++) {
-            if (healthChecker.isServerReachable("localhost", port)) {
-                return true;
-            }
-            System.out.println("[DEBUG] node " + port + " not responding, retrying " + (i + 1));
-            try { Thread.sleep(200); } catch (Exception e) {}
-        }
-        return false;
+        return failureDetector.isServerReachable("localhost", port);
     }
 }
-
-
-

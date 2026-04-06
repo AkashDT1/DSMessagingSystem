@@ -34,29 +34,27 @@ public class MessagingServer {
     public void startServer() {
         connectionManager.start();
 
-        // Data Management/Recovery: Always sync from available neighbors on startup to ensure consistency
+        // Recovery Logic: Always try to sync from any available server on startup
         new Thread(() -> {
             try {
-                Thread.sleep(2000); // Warm-up period for connection manager
-                System.out.println("[RECOVERY] Checking with cluster neighbors to catch up on missed messages...");
+                Thread.sleep(2000); // Wait for connection manager to start
+                System.out.println("Checking with neighbors to catch up on missed messages...");
                 for (int otherPort : allServerPorts) {
                     if (otherPort != myPort && leaderElection.isServerAlive(otherPort)) {
-                        System.out.println("[RECOVERY] Synchronizing state with peer at port: " + otherPort);
                         replicationManager.requestSyncFrom(otherPort);
-                        break; // Consistent state achieved after first successful sync
+                        break; // Stop after first successful sync attempt
                     }
                 }
             } catch (InterruptedException e) {
             }
         }).start();
 
-        // Cluster Coordination Monitor: Periodically re-evaluates leader health.
-        // This ensures the cluster converges on a new coordinator if the current one fails.
+        // Background fault-tolerance thread to perform heartbeat / leader election
         new Thread(() -> {
             while (true) {
                 try {
-                    Thread.sleep(5000); // Check cluster state every 5 seconds
-                    leaderElection.electLeader(); 
+                    Thread.sleep(5000);
+                    leaderElection.electLeader();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -65,25 +63,23 @@ public class MessagingServer {
     }
 
     public void processMessage(Message message) {
-        // 1. Persist the message locally if it is not already stored
+        // 1. Store locally if it's new
         boolean isNewMessage = messageStore.storeMessage(message);
 
         if (isNewMessage) {
             String type = message.isReplication() ? "REPLICATION" : "NEW";
-            System.out.println("[" + type + "] Committed message from " + message.getSender() + ": " + message.getContent());
+            System.out
+                    .println("[" + type + "] Stored message from " + message.getSender() + ": " + message.getContent());
         }
 
-        // 2. COORDINATION LOGIC: Actions differ based on the node's cluster role (Leader or Follower)
+        // 2. Replication Logic Coordinated By Leader
         if (isNewMessage && !message.isReplication()) {
             if (leaderElection.amILeader()) {
-                // LEADER ROLE: Responsible for sequencing and distributing messages to ensure cluster-wide consistency.
-                System.out.println("[COORDINATION] Leader Action: Broadcasting message sequence to all followers.");
                 replicationManager.replicateMessage(message);
             } else {
-                // FOLLOWER ROLE: Forward new client requests to the active leader for centralized sequencing.
-                int leader = leaderElection.getCurrentLeaderPort();
-                System.out.println("[COORDINATION] Follower Action: Routing request to active coordinator at port " + leader);
-                replicationManager.forwardToLeader(message, leader);
+                // Not the leader, forward up to the leader so it manages the system replication
+                System.out.println("Forwarding message to leader to handle replication.");
+                replicationManager.forwardToLeader(message, leaderElection.getCurrentLeaderPort());
             }
         }
     }
@@ -94,14 +90,9 @@ public class MessagingServer {
 
     public void showAllMessages() {
         List<Message> messages = messageStore.getAllMessages();
-        
-        System.out.println("\n===== CLUSTER COORDINATION STATUS =====");
-        System.out.println("Node: " + myPort + (leaderElection.amILeader() ? " [ACTIVE_COORDINATOR]" : " [FOLLOWER]"));
-        System.out.println("Coordinator: " + (leaderElection.amILeader() ? "Myself (Responsible for replication)" : "Port " + leaderElection.getCurrentLeaderPort()));
-        System.out.println("Follower Role: " + (!leaderElection.amILeader() ? "Forwarding client requests to coordinator" : "Serving direct requests and coordinating replication"));
-        System.out.println("-------------------------------------");
+        System.out.println("\n===== ALL MESSAGES ON THIS SERVER =====");
         if (messages.isEmpty()) {
-            System.out.println("No messages stored yet in the cluster.");
+            System.out.println("No messages stored yet.");
         } else {
             for (Message m : messages) {
                 System.out.println("[" + m.getSender() + "]: " + m.getContent());

@@ -2,30 +2,54 @@ package time;
 
 import model.Message;
 import java.util.Comparator;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
+// handle all time and sync things
 public class TimeManager {
     
+    // helper to create message with time
+    public static Message createWithTime(String sender, String receiver, String content) {
+        return new Message(sender, receiver, content, getCurrentTime());
+    }
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm:ss.SSS");
+
+    // gets current system time
     public static long getCurrentTime() {
+        // get current system time mills
         return System.currentTimeMillis();
     }
     
-    /*
-     * CLOCK SYNCHRONIZATION NOTE:
-     * In a real distributed system, physical clocks on different servers may drift and 
-     * are never perfectly synchronized. If Server A's clock is 2 seconds ahead of Server B,
-     * a message sent from A might incorrectly appear to happen "after" a message from B, 
-     * affecting the sorted order. 
+    /**
+     * Formats a long timestamp into a human-readable string.
      * 
-     * To solve this properly, distributed systems use Logical Clocks (like Lamport 
-     * timestamps or Vector Clocks) to establish correct causality rather than 
-     * relying purely on local System time.
+     * @param timestamp The timestamp in milliseconds.
+     * @return A formatted string (HH:mm:ss.SSS) for UI and log visibility.
      */
+    public static String getFormattedTimestamp(long timestamp) {
+        // format time for display
+        return DATE_FORMAT.format(new Date(timestamp));
+    }
+    
+    // comparator to sort messages by timestamp
     public static Comparator<Message> getTimestampComparator() {
-        return new Comparator<Message>() {
-            @Override
-            public int compare(Message m1, Message m2) {
-                return Long.compare(m1.getTimestamp(), m2.getTimestamp());
+        return (m1, m2) -> {
+            // if time is same we handle the issue using IDs
+            if (m1.getTimestamp() == m2.getTimestamp()) {
+                // improved same time handling
+                int idCompare = m1.getMessageId().compareTo(m2.getMessageId());
+                if (idCompare != 0) return idCompare;
+                
+                // final fallback sorting 
+                return m1.getSender().compareTo(m2.getSender());
             }
+            return Long.compare(m1.getTimestamp(), m2.getTimestamp());
         };
+    }
+
+    // compare two messages easily
+    public static int compare(Message m1, Message m2) {
+        if (m1 == null || m2 == null) return 0; // quick fix for null
+        return getTimestampComparator().compare(m1, m2);
     }
 }

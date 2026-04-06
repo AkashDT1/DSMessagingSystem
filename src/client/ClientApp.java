@@ -27,11 +27,17 @@ public class ClientApp {
             System.out.print("\nEnter message: ");
             String content = scanner.nextLine();
 
-            // Assemble payload
-            long timestamp = TimeManager.getCurrentTime();
-            Message message = new Message(sender, "All", content, timestamp);
+            // 1. Generate a timestamp to establish message ordering
+            // This allows the system to sort messages globally across all users.
+            long messageTimestamp = TimeManager.getCurrentTime();
+            String timeStr = TimeManager.getFormattedTimestamp(messageTimestamp);
+            
+            // 2. Wrap the sender details and content into a structured message object. 
+            // The timestamp is key for ensuring total message order in the system.
+            Message message = new Message(sender, "All", content, messageTimestamp);
+            System.out.println("Preparing to send message at [" + timeStr + "]");
 
-            // Send
+            // Transmit the message for processing and distribution
             out.writeObject(message);
             out.flush();
 
