@@ -79,6 +79,10 @@ public class LeaderElection {
             
             // node is down, check next one
         }
+        
+        // checking the edge case when all are down (review comment)
+        currentLeaderPort = -1;
+        System.out.println("[DEBUG] warning: seems like all nodes are down right now");
     }
 
     /**
