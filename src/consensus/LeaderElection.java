@@ -45,9 +45,14 @@ public class LeaderElection {
      */
     public synchronized void electLeader() {
         System.out.println("[DEBUG] Starting election now...");
+        long timeout = System.currentTimeMillis() + 2000; // timeout after 2 secs
         int previousLeader = currentLeaderPort;
 
         for (int potentialLeaderPort : serverPriorityList) {
+            if (System.currentTimeMillis() > timeout) {
+                System.out.println("[DEBUG] election timeout happening, stopping early.");
+                break;
+            }
             if (potentialLeaderPort <= 0) continue; // fix for any invalid port bug
             System.out.println("[DEBUG] Checking node: " + potentialLeaderPort);
             
