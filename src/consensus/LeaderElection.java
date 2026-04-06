@@ -25,7 +25,8 @@ public class LeaderElection {
 
     public LeaderElection(int myPort, List<Integer> allServerPorts) {
         this.myPort = myPort;
-        this.serverPriorityList = allServerPorts;
+        this.serverPriorityList = new java.util.ArrayList<>(allServerPorts);
+        java.util.Collections.sort(this.serverPriorityList); // sort to make sure lower port is first
         this.healthChecker = new FailureDetector();
         this.currentLeaderPort = -1;
         
