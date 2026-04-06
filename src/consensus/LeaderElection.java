@@ -60,7 +60,7 @@ public class LeaderElection {
                 return;
             } 
             
-            // Checking if a higher-priority node is reachable.
+            // checking if higher priority node is there
             if (isServerAlive(potentialLeaderPort)) {
                 currentLeaderPort = potentialLeaderPort;
                 if (previousLeader != potentialLeaderPort) {
@@ -70,7 +70,7 @@ public class LeaderElection {
                 return;
             }
             
-            // Higher priority node is DOWN, proceed to check next potential leader in the list.
+            // node is down, check next one
         }
     }
 
